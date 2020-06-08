@@ -26,7 +26,7 @@ app.use(function (err, req, res, next) {
   res.status(500).send('Something bad happened!');
 });
 
-var port = 8000
+var port = 8080
 var ip = '0.0.0.0';
 
 app.listen(port, ip);
