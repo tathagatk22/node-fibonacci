@@ -52,16 +52,6 @@ pipeline {
                 sh 'git checkout ' + "${selection_value}"
             }
         }
-        // stage('Build') {
-        //     steps {
-        //         sh 'npm install'
-        //     }
-        // }
-        // stage('Test') {
-        //     steps {
-        //         sh 'npm test'
-        //     }
-        // }
         stage('Building image') {
             environment {
                COMMIT = sh(script: 'git rev-parse --short HEAD', , returnStdout: true).trim()
@@ -89,23 +79,6 @@ pipeline {
                 sh "docker rmi $registryWithRepo:$BUILD_NUMBER"
             }
         }
-        // stage('Deploying on Kubernetes'){
-        //     when {
-        //             expression { params.deployment_value == 'On kubernetes' }
-        //         }
-        //     steps{
-        //         script {
-        //             git url: "$githubDeployRepo"
-        //             withCredentials([usernamePassword(credentialsId: "${registryCredential}", usernameVariable: 'username', passwordVariable: 'password')])
-        //             {
-        //                 sh (script: "kubectl delete secret --ignore-not-found regcred")
-        //                 sh (script: "kubectl create secret docker-registry regcred --docker-server=docker.io --docker-username=$username --docker-password=\"$password\" ")
-        //                 sh (script: "kubectl apply -f .")
-        //                 sh (script: "kubectl set image deployment/node-deployment node=$registry:$BUILD_NUMBER --record")
-        //             }
-        //         }
-        //     }
-        // }
         stage('Deploying on ECS'){
             when {
                     expression { params.deployment_value == 'True' }
@@ -115,7 +88,6 @@ pipeline {
                     withAWS(profile:'dev') {
                     sh (script: "sed -i 's;DOCKER_IMAGE_NAME;${registryWithRepo}:${BUILD_NUMBER};g' ${template_file}" )
                     sh (script: "aws ecs register-task-definition --family node-task-1 --cli-input-json file://ECS_files/template.JSON --region us-east-1")
-                    // sh (script: "sleep 15")
                     REVISION = sh(script: 'aws ecs describe-task-definition --task-definition node-task-1 --region us-east-1 | grep "revision" | tr -s " " | cut -d " " -f 3 | sed "s/.$//"', returnStdout: true).trim()
                     sh (script: "aws ecs update-service --cluster ecs-cluster --service node --task-definition node-task-1:${REVISION} --region us-east-1")
                     }
