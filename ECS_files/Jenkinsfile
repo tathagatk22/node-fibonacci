@@ -31,6 +31,7 @@ pipeline {
 		string(
             description: 'Please insert valid input',
             name: 'selection_value'
+            defaultValue: 'master'
         )
 	}
     stages {
@@ -112,10 +113,11 @@ pipeline {
             steps{
                 script {
                     withAWS(profile:'dev') {
-                    sh (script: "sed -e 's;DOCKER_IMAGE_NAME;${registryWithRepo}:${BUILD_NUMBER};g' ${template_file}" )
+                    sh (script: "sed -i 's;DOCKER_IMAGE_NAME;${registryWithRepo}:${BUILD_NUMBER};g' ${template_file}" )
                     sh (script: "aws ecs register-task-definition --family node-task-1 --cli-input-json file://ECS_files/template.JSON --region us-east-1")
+                    // sh (script: "sleep 15")
                     REVISION = sh(script: 'aws ecs describe-task-definition --task-definition node-task-1 --region us-east-1 | grep "revision" | tr -s " " | cut -d " " -f 3 | sed "s/.$//"', returnStdout: true).trim()
-                    sh (script: "aws ecs update-service --cluster ecs-cluster --service node --task-definition node-task:${REVISION} --desired-count 3")
+                    sh (script: "aws ecs update-service --cluster ecs-cluster --service node --task-definition node-task-1:${REVISION} --region us-east-1")
                     }
                 }
             }
