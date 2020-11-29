@@ -95,7 +95,7 @@ pipeline {
                         sh (script: "kubectl delete secret --ignore-not-found regcred")
                         sh (script: "kubectl create secret docker-registry regcred --docker-server=docker.io --docker-username=$username --docker-password=\"$password\" ")
                         sh (script: "kubectl apply -f .")
-                        sh (script: "kubectl set image deployment/sample-django-deployment sample-django=$registry:$BUILD_NUMBER --record")
+                        sh (script: "kubectl set image deployment/node-deployment node=$registry:$BUILD_NUMBER --record")
                     }
                 }
             }
