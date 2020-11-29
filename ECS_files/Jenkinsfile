@@ -1,0 +1,124 @@
+pipeline {
+    environment {
+        repository = "node-ecr-repo"
+        registry = "283770677653.dkr.ecr.us-east-1.amazonaws.com"
+        registryWithRepo = "$registry/$repository"
+        registryCredential = 'aws-cred'
+        githubRepo = "https://github.com/tathagatk22/node-fibonacci.git"
+        dockerImage = ''
+        dockerImageLatest = ''
+    }
+    agent any
+    parameters {
+        choice(
+            choices:
+            [
+                'True',
+                'False'
+            ],
+            description: 'Please select True to deploy this build on ECS Cluster.',
+            name: 'deployment_value'
+        )
+		choice(
+            choices:
+            [
+                'branch',
+                'commit'
+            ],
+            description: 'Please select branch or commit to checkout from.',
+            name: 'selection'
+        )
+		string(
+            description: 'Please insert valid input',
+            name: 'selection_value'
+        )
+	}
+    stages {
+        stage('Git checkout from Branch') {
+            when {
+                expression { params.selection == 'branch' }
+            }
+            steps {
+                git url: "$githubRepo", branch: "${selection_value}", credentialsId: 'git-tathagatk22'
+            }
+        }
+        stage('Git checkout from Commit') {
+            when {
+                expression { params.selection == 'commit' }
+            }
+            steps {
+                git url: "$githubRepo", credentialsId: 'git-tathagatk22'
+                sh 'git checkout ' + "${selection_value}"
+            }
+        }
+        // stage('Build') {
+        //     steps {
+        //         sh 'npm install'
+        //     }
+        // }
+        // stage('Test') {
+        //     steps {
+        //         sh 'npm test'
+        //     }
+        // }
+        stage('Building image') {
+            environment {
+               COMMIT = sh(script: 'git rev-parse --short HEAD', , returnStdout: true).trim()
+               BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', , returnStdout: true).trim()
+           }
+            steps{
+                script {
+                    dockerImage = docker.build("$registryWithRepo:$BUILD_NUMBER", "--build-arg COMMIT=${COMMIT}  --build-arg BRANCH=${BRANCH} -f Dockerfile ." )
+                }
+            }
+        }
+        stage('Publish Image') {
+            steps{
+                script {
+                    withAWS(profile:'dev') {
+                        sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $registry"
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        stage('Delete Image') {
+            steps{
+                
+                sh "docker rmi $registryWithRepo:$BUILD_NUMBER"
+            }
+        }
+        // stage('Deploying on Kubernetes'){
+        //     when {
+        //             expression { params.deployment_value == 'On kubernetes' }
+        //         }
+        //     steps{
+        //         script {
+        //             git url: "$githubDeployRepo"
+        //             withCredentials([usernamePassword(credentialsId: "${registryCredential}", usernameVariable: 'username', passwordVariable: 'password')])
+        //             {
+        //                 sh (script: "kubectl delete secret --ignore-not-found regcred")
+        //                 sh (script: "kubectl create secret docker-registry regcred --docker-server=docker.io --docker-username=$username --docker-password=\"$password\" ")
+        //                 sh (script: "kubectl apply -f .")
+        //                 sh (script: "kubectl set image deployment/node-deployment node=$registry:$BUILD_NUMBER --record")
+        //             }
+        //         }
+        //     }
+        // }
+        stage('Deploying on ECS'){
+            when {
+                    expression { params.deployment_value == 'True' }
+                }
+            steps{
+                script {
+                    withAWS(profile:'dev') {
+                    sh (script: "sed -e 's;DOCKER_IMAGE_NAME;${registryWithRepo}:${BUILD_NUMBER};g' ${template_file}" )
+                    sh (script: "aws ecs register-task-definition --family node-task-1 --cli-input-json file://taskDefinition.json --region us-east-1")
+                    REVISION = sh(script: 'aws ecs describe-task-definition --task-definition node-task-1 --region us-east-1 | grep "revision" | tr -s " " | cut -d " " -f 3', returnStdout: true).trim()
+                    sh (script: "aws ecs update-service --cluster ecs-cluster --service node --task-definition node-task:${REVISION} --desired-count 3")
+                    }
+                }
+            }
+        }
+    }
+}

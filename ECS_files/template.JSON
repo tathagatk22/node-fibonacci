@@ -1,0 +1,31 @@
+{
+    "family": "node-task-1",
+    "placementConstraints": [],
+    "volumes": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "executionRoleArn": "arn:aws:iam::283770677653:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "memory": 512,
+    "cpu": 256,
+    "containerDefinitions": [
+        {
+            "environment": [],
+            "essential": true,
+            "image": "DOCKER_IMAGE_NAME",
+            "mountPoints": [],
+            "name": "node-task",
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                }
+            ],
+            "volumesFrom": [],
+            "cpu": 50,
+            "memory": 256
+        }
+    ]
+}
