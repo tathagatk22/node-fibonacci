@@ -30,7 +30,7 @@ pipeline {
         )
 		string(
             description: 'Please insert valid input',
-            name: 'selection_value'
+            name: 'selection_value',
             defaultValue: 'master'
         )
 	}
