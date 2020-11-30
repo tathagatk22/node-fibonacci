@@ -34,3 +34,5 @@ docker build -t <image name> .
 ```
 
 This above command will create a new Docker Image which therefore can be used in Docker Environment as well as any other Container Orchestration Environment.
+
+Need to remove
