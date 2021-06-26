@@ -21,17 +21,23 @@ stages:
       vmImage: ubuntu-latest
     steps:
     - task: Docker@2
-      displayName: Build an image
       inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: |
-          $(tag)
-    - task: Docker@2
-      inputs:
+        containerRegistry: 'docker-acr-connection'
+        repository: 'node-fibo'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
 - stage: Deploy
   displayName: Deploy Image
   jobs:
-    - job: Deploy
+  - job: Deploy
+    displayName: Deploy
+    steps:
+    - task: AzureRmWebAppDeployment@4
+      inputs:
+        ConnectionType: 'AzureRM'
+        azureSubscription: 'test'
+        appType: 'webAppLinux'
+        WebAppName: 'azapp-terraform'
+        packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
+        RuntimeStack: 'NODE|14-lts'
+    
