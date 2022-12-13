@@ -7,7 +7,7 @@
     "chai": "^3.5.0",
     "chai-http": "^2.0.1",
     "mocha": "^2.4.5",
-    "express": "^4.13.4"
+    "express": "^4.17.3"
   },
   "engine": {
     "node": "*",
