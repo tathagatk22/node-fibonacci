@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "main": "server.js",
   "dependencies": {
-    "ejs": "^2.4.1",
+    "ejs": "^3.1.10",
     "chai": "^3.5.0",
     "chai-http": "^2.0.1",
     "mocha": "^2.4.5",
